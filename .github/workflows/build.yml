@@ -23,8 +23,19 @@ jobs:
           distribution: temurin
           java-version: '8'
 
-      - name: Make Ant executable
-        run: chmod +x ant
+      - name: Setup Ant
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ant
+
+      - name: Check project
+        run: |
+          echo "=== Project ==="
+          ls -la
+          echo "=== lib ==="
+          ls -la lib
+          echo "=== lib/deps ==="
+          ls -la lib/deps
 
       - name: Build Extension
         run: ant extensions
