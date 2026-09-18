@@ -1,0 +1,36 @@
+name: Build StartAppNative
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '8'
+
+      - name: Make Ant executable
+        run: chmod +x ant
+
+      - name: Build Extension
+        run: ant extensions
+
+      - name: Upload AIX
+        uses: actions/upload-artifact@v4
+        with:
+          name: StartAppNative-AIX
+          path: out/*.aix
