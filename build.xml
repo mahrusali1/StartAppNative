@@ -1,1 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="StartAppNative" default="build" basedir=".">
 
+    <property name="src.dir" value="src"/>
+    <property name="build.dir" value="build"/>
+    <property name="classes.dir" value="${build.dir}/classes"/>
+    <property name="dist.dir" value="dist"/>
+
+    <path id="classpath">
+        <fileset dir="deps">
+            <include name="*.jar"/>
+        </fileset>
+        <fileset dir="lib">
+            <include name="**/*.jar"/>
+        </fileset>
+    </path>
+
+    <target name="clean">
+        <delete dir="${build.dir}"/>
+        <delete dir="${dist.dir}"/>
+    </target>
+
+    <target name="prepare">
+        <mkdir dir="${build.dir}"/>
+        <mkdir dir="${classes.dir}"/>
+        <mkdir dir="${dist.dir}"/>
+    </target>
+
+    <target name="compile" depends="prepare">
+        <javac
+            srcdir="${src.dir}"
+            destdir="${classes.dir}"
+            includeantruntime="false"
+            source="8"
+            target="8"
+            encoding="UTF-8">
+            <classpath>
+                <path refid="classpath"/>
+            </classpath>
+        </javac>
+    </target>
+
+    <target name="jar" depends="compile">
+        <jar
+            destfile="${dist.dir}/StartAppNative.jar"
+            basedir="${classes.dir}"/>
+    </target>
+
+    <target name="build" depends="jar"/>
+</project>
