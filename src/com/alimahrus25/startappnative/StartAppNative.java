@@ -70,7 +70,7 @@ public class StartAppNative extends AndroidNonvisibleComponent {
     preferences.setAdsNumber(numberOfAds);
     preferences.setPrimaryImageSize(primaryImageSize);
     preferences.setSecondaryImageSize(secondaryImageSize);
-    preferences.setAutoBitmapDownload(false);
+    preferences.setAutoBitmapDownload(true);
     nativeAd.setPreferences(preferences);
     nativeAd.loadAd(new AdEventListener() {
       @Override public void onReceiveAd(Ad ad) {
