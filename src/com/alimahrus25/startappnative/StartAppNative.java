@@ -20,6 +20,7 @@ import com.startapp.sdk.ads.nativead.NativeAdDetails;
 import com.startapp.sdk.ads.nativead.NativeAdPreferences;
 import com.startapp.sdk.ads.nativead.StartAppNativeAd;
 import java.util.ArrayList;
+import android.util.Log;
 
 @DesignerComponent(version = 4, description = "Start.io Native Ads SDK 5.2.0 for Niotron", category = ComponentCategory.EXTENSION, nonVisible = true, iconName = "aiwebres/icon.png")
 @SimpleObject(external = true)
@@ -91,11 +92,14 @@ public class StartAppNative extends AndroidNonvisibleComponent {
     if (error != null && error.trim().length() > 0) {
       message = error;
     } else {
-      message = "SDK returned an error but no error message. Ad=" + ad.toString();
+      message = "SDK returned an error but no error message";
     }
   } else {
     message = "SDK returned null Ad object";
   }
+
+  Log.e("StartAppNative", "NATIVE AD FAILED: " + message);
+  Log.e("StartAppNative", "AD OBJECT: " + String.valueOf(ad));
 
   AdFailedToLoad(message);
 }
