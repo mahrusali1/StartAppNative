@@ -105,25 +105,19 @@ public class StartAppNative
 
         try {
 
+            final String normalizedAppId =
+                appId.trim();
+
             AdDebug(
                 "Initialize: creating SDKAdPreferences"
             );
 
-            SDKAdPreferences preferences =
+            final SDKAdPreferences preferences =
                 new SDKAdPreferences();
 
             AdDebug(
-                "Initialize: calling StartAppSDK.init"
-            );
-
-            StartAppSDK.init(
-                activity,
-                appId.trim(),
-                preferences
-            );
-
-            AdDebug(
-                "Initialize: StartAppSDK.init completed"
+                "Initialize: calling " +
+                "StartAppSDK.setTestAdsEnabled"
             );
 
             StartAppSDK.setTestAdsEnabled(
@@ -135,16 +129,49 @@ public class StartAppNative
                 String.valueOf(testMode)
             );
 
-            initialized = true;
-
             AdDebug(
-                "Initialize: initialized = true"
+                "Initialize: calling " +
+                "StartAppSDK.initParams"
             );
 
-            SdkInitialized();
+            StartAppSDK.initParams(
+                activity,
+                normalizedAppId
+            )
+                .setSdkAdPrefs(
+                    preferences
+                )
+                .setAccountId(
+                    normalizedAppId
+                )
+                .setCallback(
+                    new Runnable() {
+                        @Override
+                        public void run() {
+
+                            initialized = true;
+
+                            AdDebug(
+                                "Initialize: SDK callback received"
+                            );
+
+                            AdDebug(
+                                "Initialize: initialized = true"
+                            );
+
+                            SdkInitialized();
+
+                            AdDebug(
+                                "Initialize: " +
+                                "SdkInitialized event dispatched"
+                            );
+                        }
+                    }
+                )
+                .init();
 
             AdDebug(
-                "Initialize: SdkInitialized event dispatched"
+                "Initialize: StartAppSDK.initParams().init() completed"
             );
 
         } catch (Exception e) {
