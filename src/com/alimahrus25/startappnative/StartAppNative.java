@@ -2,6 +2,10 @@ package com.alimahrus25.startappnative;
 
 import android.app.Activity;
 import android.util.Log;
+import android.view.Gravity;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.FrameLayout;
 
 import com.google.appinventor.components.annotations.DesignerComponent;
 import com.google.appinventor.components.annotations.SimpleEvent;
@@ -19,6 +23,10 @@ import com.startapp.sdk.adsbase.Ad;
 import com.startapp.sdk.adsbase.SDKAdPreferences;
 import com.startapp.sdk.adsbase.StartAppSDK;
 import com.startapp.sdk.adsbase.adlisteners.AdEventListener;
+
+import com.startapp.sdk.ads.banner.Banner;
+import com.startapp.sdk.ads.banner.BannerListener;
+
 import com.startapp.sdk.ads.nativead.NativeAdDetails;
 import com.startapp.sdk.ads.nativead.NativeAdPreferences;
 import com.startapp.sdk.ads.nativead.StartAppNativeAd;
@@ -26,46 +34,87 @@ import com.startapp.sdk.ads.nativead.StartAppNativeAd;
 import java.util.ArrayList;
 
 @DesignerComponent(
-    version = 5,
-    description = "Start.io Native Ads SDK 5.2.0 for Niotron",
+    version = 6,
+    description = "Start.io Native Ads and Banner SDK 5.1.0 for Niotron",
     category = ComponentCategory.EXTENSION,
     nonVisible = true,
     iconName = "aiwebres/icon.png"
 )
 @SimpleObject(external = true)
 @UsesPermissions(
-    permissionNames = "android.permission.INTERNET, android.permission.ACCESS_NETWORK_STATE"
+    permissionNames =
+        "android.permission.INTERNET, " +
+        "android.permission.ACCESS_NETWORK_STATE"
 )
-public class StartAppNative extends AndroidNonvisibleComponent {
+public class StartAppNative
+    extends AndroidNonvisibleComponent {
 
     private final Activity activity;
+
+    // =========================================================
+    // NATIVE
+    // =========================================================
+
     private StartAppNativeAd nativeAd;
     private boolean initialized;
+
+    // =========================================================
+    // BANNER
+    // =========================================================
+
+    private Banner banner;
+    private boolean bannerLoaded;
+    private FrameLayout bannerContainer;
 
     public StartAppNative(ComponentContainer container) {
         super(container.$form());
         activity = container.$context();
     }
 
+    // =========================================================
+    // INITIALIZE
+    // =========================================================
+
     @SimpleFunction(
-        description = "Initializes Start.io SDK. Call before LoadNativeAd."
+        description =
+            "Initializes Start.io SDK. " +
+            "Call before LoadNativeAd or LoadBanner."
     )
-    public void Initialize(String appId, boolean testMode) {
+    public void Initialize(
+        String appId,
+        boolean testMode
+    ) {
 
         AdDebug("Initialize: started");
 
-        if (appId == null || appId.trim().length() == 0) {
-            AdDebug("Initialize: App ID is empty");
-            ErrorOccurred("App ID cannot be empty");
+        if (
+            appId == null ||
+            appId.trim().length() == 0
+        ) {
+
+            AdDebug(
+                "Initialize: App ID is empty"
+            );
+
+            ErrorOccurred(
+                "App ID cannot be empty"
+            );
+
             return;
         }
 
         try {
-            AdDebug("Initialize: creating SDKAdPreferences");
 
-            SDKAdPreferences preferences = new SDKAdPreferences();
+            AdDebug(
+                "Initialize: creating SDKAdPreferences"
+            );
 
-            AdDebug("Initialize: calling StartAppSDK.init");
+            SDKAdPreferences preferences =
+                new SDKAdPreferences();
+
+            AdDebug(
+                "Initialize: calling StartAppSDK.init"
+            );
 
             StartAppSDK.init(
                 activity,
@@ -73,9 +122,13 @@ public class StartAppNative extends AndroidNonvisibleComponent {
                 preferences
             );
 
-            AdDebug("Initialize: StartAppSDK.init completed");
+            AdDebug(
+                "Initialize: StartAppSDK.init completed"
+            );
 
-            StartAppSDK.setTestAdsEnabled(testMode);
+            StartAppSDK.setTestAdsEnabled(
+                testMode
+            );
 
             AdDebug(
                 "Initialize: testMode = " +
@@ -84,11 +137,15 @@ public class StartAppNative extends AndroidNonvisibleComponent {
 
             initialized = true;
 
-            AdDebug("Initialize: initialized = true");
+            AdDebug(
+                "Initialize: initialized = true"
+            );
 
             SdkInitialized();
 
-            AdDebug("Initialize: SdkInitialized event dispatched");
+            AdDebug(
+                "Initialize: SdkInitialized event dispatched"
+            );
 
         } catch (Exception e) {
 
@@ -97,12 +154,445 @@ public class StartAppNative extends AndroidNonvisibleComponent {
                 errorMessage(e)
             );
 
-            ErrorOccurred(errorMessage(e));
+            ErrorOccurred(
+                errorMessage(e)
+            );
+        }
+    }
+
+    // =========================================================
+    // BANNER
+    // =========================================================
+
+    @SimpleFunction(
+        description =
+            "Loads a Start.io Banner using the " +
+            "default 320x50 dp size."
+    )
+    public void LoadBanner() {
+
+        LoadBannerSize(
+            320,
+            50
+        );
+    }
+
+    @SimpleFunction(
+        description =
+            "Loads a Start.io Banner. " +
+            "Width and height are in dp."
+    )
+    public void LoadBannerSize(
+        int widthDp,
+        int heightDp
+    ) {
+
+        AdDebug(
+            "LoadBanner: started"
+        );
+
+        if (!initialized) {
+
+            AdDebug(
+                "LoadBanner: FAILED - SDK not initialized"
+            );
+
+            BannerFailedToLoad(
+                "Call Initialize before LoadBanner"
+            );
+
+            ErrorOccurred(
+                "Call Initialize before LoadBanner"
+            );
+
+            return;
+        }
+
+        if (widthDp <= 0) {
+            widthDp = 320;
+        }
+
+        if (heightDp <= 0) {
+            heightDp = 50;
+        }
+
+        final int finalWidthDp =
+            widthDp;
+
+        final int finalHeightDp =
+            heightDp;
+
+        AdDebug(
+            "LoadBanner: size = " +
+            String.valueOf(finalWidthDp) +
+            "x" +
+            String.valueOf(finalHeightDp) +
+            " dp"
+        );
+
+        try {
+
+            RemoveBannerFromScreen();
+
+            AdDebug(
+                "LoadBanner: creating Banner"
+            );
+
+            banner =
+                new Banner(
+                    activity,
+                    new BannerListener() {
+
+                        @Override
+                        public void onReceiveAd(
+                            View view
+                        ) {
+
+                            bannerLoaded = true;
+
+                            AdDebug(
+                                "Banner onReceiveAd: callback received"
+                            );
+
+                            try {
+
+                                AddBannerToScreen(
+                                    finalWidthDp,
+                                    finalHeightDp
+                                );
+
+                                if (banner != null) {
+
+                                    banner.showBanner();
+
+                                }
+
+                                AdDebug(
+                                    "Banner onReceiveAd: " +
+                                    "banner added and shown"
+                                );
+
+                                BannerLoaded();
+
+                            } catch (Exception e) {
+
+                                AdDebug(
+                                    "Banner onReceiveAd: " +
+                                    "EXCEPTION = " +
+                                    errorMessage(e)
+                                );
+
+                                BannerFailedToLoad(
+                                    "Banner display exception: " +
+                                    errorMessage(e)
+                                );
+                            }
+                        }
+
+                        @Override
+                        public void onFailedToReceiveAd(
+                            View view
+                        ) {
+
+                            bannerLoaded = false;
+
+                            AdDebug(
+                                "Banner onFailedToReceiveAd: " +
+                                "callback received"
+                            );
+
+                            BannerFailedToLoad(
+                                "Banner request failed"
+                            );
+                        }
+
+                        @Override
+                        public void onImpression(
+                            View view
+                        ) {
+
+                            AdDebug(
+                                "Banner onImpression"
+                            );
+
+                            BannerImpression();
+                        }
+
+                        @Override
+                        public void onClick(
+                            View view
+                        ) {
+
+                            AdDebug(
+                                "Banner onClick"
+                            );
+
+                            BannerClicked();
+                        }
+                    }
+                );
+
+            AdDebug(
+                "LoadBanner: Banner created"
+            );
+
+            /*
+             * Hide it until the SDK reports
+             * that the banner has been received.
+             */
+            banner.setVisibility(
+                View.GONE
+            );
+
+            AddBannerToScreen(
+                finalWidthDp,
+                finalHeightDp
+            );
+
+            AdDebug(
+                "LoadBanner: calling " +
+                "banner.loadAd(" +
+                String.valueOf(finalWidthDp) +
+                "," +
+                String.valueOf(finalHeightDp) +
+                ")"
+            );
+
+            /*
+             * This is the Start.io Banner API:
+             *
+             * banner.loadAd(widthDP, heightDP);
+             */
+            banner.loadAd(
+                finalWidthDp,
+                finalHeightDp
+            );
+
+            AdDebug(
+                "LoadBanner: banner.loadAd() returned"
+            );
+
+        } catch (Exception e) {
+
+            AdDebug(
+                "LoadBanner: EXCEPTION = " +
+                errorMessage(e)
+            );
+
+            BannerFailedToLoad(
+                errorMessage(e)
+            );
+
+            ErrorOccurred(
+                errorMessage(e)
+            );
         }
     }
 
     @SimpleFunction(
-        description = "Loads native ads. Primary and secondary image sizes use numeric values: 0=72x72, 1=100x100, 2=150x150, 3=340x340, 4=1200x628, 5=320x480, 6=480x320. Secondary supports only 0 to 3."
+        description =
+            "Shows the Start.io Banner."
+    )
+    public void ShowBanner() {
+
+        if (banner == null) {
+
+            AdDebug(
+                "ShowBanner: no banner"
+            );
+
+            BannerFailedToLoad(
+                "No banner has been created"
+            );
+
+            return;
+        }
+
+        try {
+
+            banner.setVisibility(
+                View.VISIBLE
+            );
+
+            /*
+             * Start.io Banner API.
+             */
+            banner.showBanner();
+
+            AdDebug(
+                "ShowBanner: banner shown"
+            );
+
+        } catch (Exception e) {
+
+            AdDebug(
+                "ShowBanner: EXCEPTION = " +
+                errorMessage(e)
+            );
+
+            ErrorOccurred(
+                errorMessage(e)
+            );
+        }
+    }
+
+    @SimpleFunction(
+        description =
+            "Hides the Start.io Banner."
+    )
+    public void HideBanner() {
+
+        if (banner == null) {
+
+            AdDebug(
+                "HideBanner: no banner"
+            );
+
+            return;
+        }
+
+        try {
+
+            /*
+             * Start.io Banner API.
+             */
+            banner.hideBanner();
+
+            banner.setVisibility(
+                View.GONE
+            );
+
+            AdDebug(
+                "HideBanner: banner hidden"
+            );
+
+        } catch (Exception e) {
+
+            AdDebug(
+                "HideBanner: EXCEPTION = " +
+                errorMessage(e)
+            );
+
+            ErrorOccurred(
+                errorMessage(e)
+            );
+        }
+    }
+
+    /*
+     * Adds the Banner View to the bottom-center
+     * of the Activity.
+     */
+    private void AddBannerToScreen(
+        int widthDp,
+        int heightDp
+    ) {
+
+        if (banner == null) {
+            return;
+        }
+
+        if (bannerContainer == null) {
+
+            FrameLayout content =
+                activity.findViewById(
+                    android.R.id.content
+                );
+
+            if (content == null) {
+
+                throw new IllegalStateException(
+                    "Activity content view is NULL"
+                );
+            }
+
+            bannerContainer =
+                new FrameLayout(
+                    activity
+                );
+
+            FrameLayout.LayoutParams
+                containerParams =
+                new FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.WRAP_CONTENT
+                );
+
+            containerParams.gravity =
+                Gravity.BOTTOM |
+                Gravity.CENTER_HORIZONTAL;
+
+            content.addView(
+                bannerContainer,
+                containerParams
+            );
+        }
+
+        /*
+         * Prevent the same Banner View from
+         * having two parents.
+         */
+        if (banner.getParent() != null) {
+
+            ((ViewGroup) banner.getParent())
+                .removeView(banner);
+        }
+
+        FrameLayout.LayoutParams
+            bannerParams =
+            new FrameLayout.LayoutParams(
+                dpToPx(widthDp),
+                dpToPx(heightDp)
+            );
+
+        bannerParams.gravity =
+            Gravity.BOTTOM |
+            Gravity.CENTER_HORIZONTAL;
+
+        bannerContainer.addView(
+            banner,
+            bannerParams
+        );
+    }
+
+    private void RemoveBannerFromScreen() {
+
+        if (
+            banner != null &&
+            banner.getParent() != null
+        ) {
+
+            ((ViewGroup) banner.getParent())
+                .removeView(banner);
+        }
+
+        bannerLoaded = false;
+    }
+
+    private int dpToPx(int dp) {
+
+        float density =
+            activity
+                .getResources()
+                .getDisplayMetrics()
+                .density;
+
+        return Math.round(
+            dp * density
+        );
+    }
+
+    // =========================================================
+    // NATIVE AD
+    // =========================================================
+
+    @SimpleFunction(
+        description =
+            "Loads native ads. Primary and secondary " +
+            "image sizes use numeric values: " +
+            "0=72x72, 1=100x100, 2=150x150, " +
+            "3=340x340, 4=1200x628, 5=320x480, " +
+            "6=480x320. Secondary supports only 0 to 3."
     )
     public void LoadNativeAd(
         int numberOfAds,
@@ -110,7 +600,9 @@ public class StartAppNative extends AndroidNonvisibleComponent {
         int secondaryImageSize
     ) {
 
-        AdDebug("LoadNativeAd: started");
+        AdDebug(
+            "LoadNativeAd: started"
+        );
 
         if (!initialized) {
 
@@ -125,17 +617,27 @@ public class StartAppNative extends AndroidNonvisibleComponent {
             return;
         }
 
-        AdDebug("LoadNativeAd: SDK is initialized");
+        AdDebug(
+            "LoadNativeAd: SDK is initialized"
+        );
 
         if (numberOfAds < 1) {
             numberOfAds = 1;
         }
 
-        if (primaryImageSize < 0 || primaryImageSize > 6) {
+        if (
+            primaryImageSize < 0 ||
+            primaryImageSize > 6
+        ) {
+
             primaryImageSize = 2;
         }
 
-        if (secondaryImageSize < 0 || secondaryImageSize > 3) {
+        if (
+            secondaryImageSize < 0 ||
+            secondaryImageSize > 3
+        ) {
+
             secondaryImageSize = 0;
         }
 
@@ -160,7 +662,10 @@ public class StartAppNative extends AndroidNonvisibleComponent {
                 "LoadNativeAd: creating StartAppNativeAd"
             );
 
-            nativeAd = new StartAppNativeAd(activity.getApplicationContext());
+            nativeAd =
+                new StartAppNativeAd(
+                    activity.getApplicationContext()
+                );
 
             AdDebug(
                 "LoadNativeAd: StartAppNativeAd created"
@@ -173,16 +678,21 @@ public class StartAppNative extends AndroidNonvisibleComponent {
                 "LoadNativeAd: NativeAdPreferences created"
             );
 
-            preferences.setAdsNumber(numberOfAds);
+            preferences.setAdsNumber(
+                numberOfAds
+            );
 
             AdDebug(
                 "LoadNativeAd: setAdsNumber completed"
             );
 
-            preferences.setPrimaryImageSize(primaryImageSize);
+            preferences.setPrimaryImageSize(
+                primaryImageSize
+            );
 
             AdDebug(
-                "LoadNativeAd: setPrimaryImageSize completed"
+                "LoadNativeAd: " +
+                "setPrimaryImageSize completed"
             );
 
             preferences.setSecondaryImageSize(
@@ -190,16 +700,22 @@ public class StartAppNative extends AndroidNonvisibleComponent {
             );
 
             AdDebug(
-                "LoadNativeAd: setSecondaryImageSize completed"
+                "LoadNativeAd: " +
+                "setSecondaryImageSize completed"
             );
 
-            preferences.setAutoBitmapDownload(true);
+            preferences.setAutoBitmapDownload(
+                true
+            );
 
             AdDebug(
-                "LoadNativeAd: setAutoBitmapDownload(true) completed"
+                "LoadNativeAd: " +
+                "setAutoBitmapDownload(true) completed"
             );
 
-            nativeAd.setPreferences(preferences);
+            nativeAd.setPreferences(
+                preferences
+            );
 
             AdDebug(
                 "LoadNativeAd: setPreferences completed"
@@ -213,7 +729,9 @@ public class StartAppNative extends AndroidNonvisibleComponent {
                 new AdEventListener() {
 
                     @Override
-                    public void onReceiveAd(Ad ad) {
+                    public void onReceiveAd(
+                        Ad ad
+                    ) {
 
                         AdDebug(
                             "onReceiveAd: callback received"
@@ -222,13 +740,15 @@ public class StartAppNative extends AndroidNonvisibleComponent {
                         if (ad == null) {
 
                             AdDebug(
-                                "onReceiveAd: Ad object is NULL"
+                                "onReceiveAd: " +
+                                "Ad object is NULL"
                             );
 
                         } else {
 
                             AdDebug(
-                                "onReceiveAd: Ad object received"
+                                "onReceiveAd: " +
+                                "Ad object received"
                             );
                         }
 
@@ -240,7 +760,8 @@ public class StartAppNative extends AndroidNonvisibleComponent {
                             if (ads == null) {
 
                                 AdDebug(
-                                    "onReceiveAd: getNativeAds() returned NULL"
+                                    "onReceiveAd: " +
+                                    "getNativeAds() returned NULL"
                                 );
 
                                 AdFailedToLoad(
@@ -251,21 +772,27 @@ public class StartAppNative extends AndroidNonvisibleComponent {
                             }
 
                             AdDebug(
-                                "onReceiveAd: native ads count = " +
-                                String.valueOf(ads.size())
+                                "onReceiveAd: " +
+                                "native ads count = " +
+                                String.valueOf(
+                                    ads.size()
+                                )
                             );
 
                             if (ads.size() == 0) {
 
                                 AdDebug(
-                                    "onReceiveAd: native ads list is EMPTY"
+                                    "onReceiveAd: " +
+                                    "native ads list is EMPTY"
                                 );
 
                                 AdFailedToLoad(
                                     "SDK returned 0 native ads"
                                 );
 
-                            } else if (ads.size() == 1) {
+                            } else if (
+                                ads.size() == 1
+                            ) {
 
                                 NativeAdDetails detail =
                                     ads.get(0);
@@ -273,7 +800,8 @@ public class StartAppNative extends AndroidNonvisibleComponent {
                                 if (detail == null) {
 
                                     AdDebug(
-                                        "onReceiveAd: first NativeAdDetails is NULL"
+                                        "onReceiveAd: " +
+                                        "first NativeAdDetails is NULL"
                                     );
 
                                     AdFailedToLoad(
@@ -284,7 +812,8 @@ public class StartAppNative extends AndroidNonvisibleComponent {
                                 }
 
                                 AdDebug(
-                                    "onReceiveAd: NativeAdDetails received"
+                                    "onReceiveAd: " +
+                                    "NativeAdDetails received"
                                 );
 
                                 AdLoaded(
@@ -293,23 +822,31 @@ public class StartAppNative extends AndroidNonvisibleComponent {
                                 );
 
                                 AdDebug(
-                                    "onReceiveAd: AdLoaded event dispatched"
+                                    "onReceiveAd: " +
+                                    "AdLoaded event dispatched"
                                 );
 
                             } else {
 
                                 AdDebug(
-                                    "onReceiveAd: multiple native ads received"
+                                    "onReceiveAd: " +
+                                    "multiple native ads received"
                                 );
 
                                 AdLoaded(
-                                    YailList.makeList(ads),
+                                    YailList.makeList(
+                                        ads
+                                    ),
                                     ads.size()
                                 );
 
                                 AdDebug(
-                                    "onReceiveAd: AdLoaded event dispatched, count = " +
-                                    String.valueOf(ads.size())
+                                    "onReceiveAd: " +
+                                    "AdLoaded event dispatched, " +
+                                    "count = " +
+                                    String.valueOf(
+                                        ads.size()
+                                    )
                                 );
                             }
 
@@ -328,22 +865,27 @@ public class StartAppNative extends AndroidNonvisibleComponent {
                     }
 
                     @Override
-                    public void onFailedToReceiveAd(Ad ad) {
+                    public void onFailedToReceiveAd(
+                        Ad ad
+                    ) {
 
                         AdDebug(
-                            "onFailedToReceiveAd: callback received"
+                            "onFailedToReceiveAd: " +
+                            "callback received"
                         );
 
                         if (ad == null) {
 
                             AdDebug(
-                                "onFailedToReceiveAd: Ad object = NULL"
+                                "onFailedToReceiveAd: " +
+                                "Ad object = NULL"
                             );
 
                         } else {
 
                             AdDebug(
-                                "onFailedToReceiveAd: Ad object exists"
+                                "onFailedToReceiveAd: " +
+                                "Ad object exists"
                             );
 
                             try {
@@ -357,21 +899,24 @@ public class StartAppNative extends AndroidNonvisibleComponent {
                                 ) {
 
                                     AdDebug(
-                                        "onFailedToReceiveAd: SDK error = " +
+                                        "onFailedToReceiveAd: " +
+                                        "SDK error = " +
                                         error
                                     );
 
                                 } else {
 
                                     AdDebug(
-                                        "onFailedToReceiveAd: SDK error message is EMPTY"
+                                        "onFailedToReceiveAd: " +
+                                        "SDK error message is EMPTY"
                                     );
                                 }
 
                             } catch (Exception e) {
 
                                 AdDebug(
-                                    "onFailedToReceiveAd: getErrorMessage EXCEPTION = " +
+                                    "onFailedToReceiveAd: " +
+                                    "getErrorMessage EXCEPTION = " +
                                     errorMessage(e)
                                 );
                             }
@@ -406,30 +951,66 @@ public class StartAppNative extends AndroidNonvisibleComponent {
         }
     }
 
+    // =========================================================
+    // NATIVE IMAGE SIZE
+    // =========================================================
+
     @SimpleFunction(
-        description = "Returns 0 for 72x72, 1 for 100x100, 2 for 150x150, 3 for 340x340, 4 for 1200x628, 5 for 320x480, and 6 for 480x320."
+        description =
+            "Returns 0 for 72x72, 1 for 100x100, " +
+            "2 for 150x150, 3 for 340x340, " +
+            "4 for 1200x628, 5 for 320x480, " +
+            "and 6 for 480x320."
     )
-    public int ImageSizeCode(String size) {
+    public int ImageSizeCode(
+        String size
+    ) {
 
         if (size == null) {
             return 2;
         }
 
-        String s = size.trim().toUpperCase();
+        String s =
+            size.trim().toUpperCase();
 
-        if (s.equals("72X72")) return 0;
-        if (s.equals("100X100")) return 1;
-        if (s.equals("150X150")) return 2;
-        if (s.equals("340X340")) return 3;
-        if (s.equals("1200X628")) return 4;
-        if (s.equals("320X480")) return 5;
-        if (s.equals("480X320")) return 6;
+        if (s.equals("72X72")) {
+            return 0;
+        }
+
+        if (s.equals("100X100")) {
+            return 1;
+        }
+
+        if (s.equals("150X150")) {
+            return 2;
+        }
+
+        if (s.equals("340X340")) {
+            return 3;
+        }
+
+        if (s.equals("1200X628")) {
+            return 4;
+        }
+
+        if (s.equals("320X480")) {
+            return 5;
+        }
+
+        if (s.equals("480X320")) {
+            return 6;
+        }
 
         return 2;
     }
 
+    // =========================================================
+    // NATIVE CLICK REGISTRATION
+    // =========================================================
+
     @SimpleFunction(
-        description = "Registers a visible component for native-ad clicks."
+        description =
+            "Registers a visible component for native-ad clicks."
     )
     public void RegisterContainerForClick(
         Object adDetails,
@@ -450,72 +1031,149 @@ public class StartAppNative extends AndroidNonvisibleComponent {
         } else {
 
             ErrorOccurred(
-                "RegisterContainerForClick requires a Native Ad and a visible container"
+                "RegisterContainerForClick requires " +
+                "a Native Ad and a visible container"
             );
         }
     }
 
+    // =========================================================
+    // NATIVE GETTERS
+    // =========================================================
+
     @SimpleFunction(
-        description = "Returns the ad title."
+        description =
+            "Returns the ad title."
     )
-    public String GetAdTitle(Object a) {
-        return value(a, "GetAdTitle", 0);
+    public String GetAdTitle(
+        Object a
+    ) {
+
+        return value(
+            a,
+            "GetAdTitle",
+            0
+        );
     }
 
     @SimpleFunction(
-        description = "Returns the ad description."
+        description =
+            "Returns the ad description."
     )
-    public String GetAdDescription(Object a) {
-        return value(a, "GetAdDescription", 1);
+    public String GetAdDescription(
+        Object a
+    ) {
+
+        return value(
+            a,
+            "GetAdDescription",
+            1
+        );
     }
 
     @SimpleFunction(
-        description = "Returns the ad rating."
+        description =
+            "Returns the ad rating."
     )
-    public String GetAdRating(Object a) {
-        return value(a, "GetAdRating", 2);
+    public String GetAdRating(
+        Object a
+    ) {
+
+        return value(
+            a,
+            "GetAdRating",
+            2
+        );
     }
 
     @SimpleFunction(
-        description = "Returns the primary image URL."
+        description =
+            "Returns the primary image URL."
     )
-    public String GetAdImageUrl(Object a) {
-        return value(a, "GetAdImageUrl", 3);
+    public String GetAdImageUrl(
+        Object a
+    ) {
+
+        return value(
+            a,
+            "GetAdImageUrl",
+            3
+        );
     }
 
     @SimpleFunction(
-        description = "Returns the secondary image URL."
+        description =
+            "Returns the secondary image URL."
     )
-    public String GetAdSecondaryImageUrl(Object a) {
-        return value(a, "GetAdSecondaryImageUrl", 4);
+    public String GetAdSecondaryImageUrl(
+        Object a
+    ) {
+
+        return value(
+            a,
+            "GetAdSecondaryImageUrl",
+            4
+        );
     }
 
     @SimpleFunction(
-        description = "Returns the call-to-action text."
+        description =
+            "Returns the call-to-action text."
     )
-    public String GetAdCallToAction(Object a) {
-        return value(a, "GetAdCallToAction", 5);
+    public String GetAdCallToAction(
+        Object a
+    ) {
+
+        return value(
+            a,
+            "GetAdCallToAction",
+            5
+        );
     }
 
     @SimpleFunction(
-        description = "Returns the install text."
+        description =
+            "Returns the install text."
     )
-    public String GetAdInstalls(Object a) {
-        return value(a, "GetAdInstalls", 6);
+    public String GetAdInstalls(
+        Object a
+    ) {
+
+        return value(
+            a,
+            "GetAdInstalls",
+            6
+        );
     }
 
     @SimpleFunction(
-        description = "Returns the ad category."
+        description =
+            "Returns the ad category."
     )
-    public String GetAdCategory(Object a) {
-        return value(a, "GetAdCategory", 7);
+    public String GetAdCategory(
+        Object a
+    ) {
+
+        return value(
+            a,
+            "GetAdCategory",
+            7
+        );
     }
 
     @SimpleFunction(
-        description = "Returns the advertised package name."
+        description =
+            "Returns the advertised package name."
     )
-    public String GetPackageName(Object a) {
-        return value(a, "GetPackageName", 8);
+    public String GetPackageName(
+        Object a
+    ) {
+
+        return value(
+            a,
+            "GetPackageName",
+            8
+        );
     }
 
     private String value(
@@ -524,7 +1182,9 @@ public class StartAppNative extends AndroidNonvisibleComponent {
         int field
     ) {
 
-        if (!(object instanceof NativeAdDetails)) {
+        if (
+            !(object instanceof NativeAdDetails)
+        ) {
 
             ErrorOccurred(
                 method +
@@ -540,10 +1200,14 @@ public class StartAppNative extends AndroidNonvisibleComponent {
         switch (field) {
 
             case 0:
-                return text(ad.getTitle());
+                return text(
+                    ad.getTitle()
+                );
 
             case 1:
-                return text(ad.getDescription());
+                return text(
+                    ad.getDescription()
+                );
 
             case 2:
                 return String.valueOf(
@@ -583,14 +1247,21 @@ public class StartAppNative extends AndroidNonvisibleComponent {
     }
 
     @SimpleFunction(
-        description = "Returns App, Market, or Unknown for the campaign action."
+        description =
+            "Returns App, Market, or Unknown " +
+            "for the campaign action."
     )
-    public String GetAdCampaignActionType(Object a) {
+    public String GetAdCampaignActionType(
+        Object a
+    ) {
 
-        if (!(a instanceof NativeAdDetails)) {
+        if (
+            !(a instanceof NativeAdDetails)
+        ) {
 
             ErrorOccurred(
-                "GetAdCampaignActionType requires a Native Ad as input"
+                "GetAdCampaignActionType requires " +
+                "a Native Ad as input"
             );
 
             return "";
@@ -607,31 +1278,58 @@ public class StartAppNative extends AndroidNonvisibleComponent {
         String name =
             action.toString();
 
-        if (name.indexOf("LAUNCH_APP") >= 0) {
+        if (
+            name.indexOf(
+                "LAUNCH_APP"
+            ) >= 0
+        ) {
+
             return "App";
         }
 
-        if (name.indexOf("OPEN_MARKET") >= 0) {
+        if (
+            name.indexOf(
+                "OPEN_MARKET"
+            ) >= 0
+        ) {
+
             return "Market";
         }
 
         return "Unknown";
     }
 
-    private String text(String value) {
-        return value == null ? "" : value;
+    private String text(
+        String value
+    ) {
+
+        return value == null
+            ? ""
+            : value;
     }
 
-    private String errorMessage(Exception e) {
+    private String errorMessage(
+        Exception e
+    ) {
+
         return e.getMessage() == null
             ? e.toString()
             : e.getMessage();
     }
 
+    // =========================================================
+    // EVENTS
+    // =========================================================
+
     @SimpleEvent(
-        description = "Provides debug information during native ad loading."
+        description =
+            "Provides debug information during " +
+            "SDK, Banner, and Native Ad loading."
     )
-    public void AdDebug(String message) {
+    public void AdDebug(
+        String message
+    ) {
+
         EventDispatcher.dispatchEvent(
             this,
             "AdDebug",
@@ -640,22 +1338,85 @@ public class StartAppNative extends AndroidNonvisibleComponent {
     }
 
     @SimpleEvent(
-        description = "Fired after SDK initialization."
+        description =
+            "Fired after SDK initialization."
     )
     public void SdkInitialized() {
+
         EventDispatcher.dispatchEvent(
             this,
             "SdkInitialized"
         );
     }
 
+    // =========================================================
+    // BANNER EVENTS
+    // =========================================================
+
     @SimpleEvent(
-        description = "Fired when native ads are loaded."
+        description =
+            "Fired when a Banner is successfully loaded."
+    )
+    public void BannerLoaded() {
+
+        EventDispatcher.dispatchEvent(
+            this,
+            "BannerLoaded"
+        );
+    }
+
+    @SimpleEvent(
+        description =
+            "Fired when Banner loading fails."
+    )
+    public void BannerFailedToLoad(
+        String message
+    ) {
+
+        EventDispatcher.dispatchEvent(
+            this,
+            "BannerFailedToLoad",
+            message
+        );
+    }
+
+    @SimpleEvent(
+        description =
+            "Fired when the Banner generates an impression."
+    )
+    public void BannerImpression() {
+
+        EventDispatcher.dispatchEvent(
+            this,
+            "BannerImpression"
+        );
+    }
+
+    @SimpleEvent(
+        description =
+            "Fired when the Banner is clicked."
+    )
+    public void BannerClicked() {
+
+        EventDispatcher.dispatchEvent(
+            this,
+            "BannerClicked"
+        );
+    }
+
+    // =========================================================
+    // NATIVE EVENTS
+    // =========================================================
+
+    @SimpleEvent(
+        description =
+            "Fired when native ads are loaded."
     )
     public void AdLoaded(
         Object a,
         int count
     ) {
+
         EventDispatcher.dispatchEvent(
             this,
             "AdLoaded",
@@ -665,11 +1426,13 @@ public class StartAppNative extends AndroidNonvisibleComponent {
     }
 
     @SimpleEvent(
-        description = "Fired when native ad loading fails."
+        description =
+            "Fired when native ad loading fails."
     )
     public void AdFailedToLoad(
         String message
     ) {
+
         EventDispatcher.dispatchEvent(
             this,
             "AdFailedToLoad",
@@ -678,11 +1441,13 @@ public class StartAppNative extends AndroidNonvisibleComponent {
     }
 
     @SimpleEvent(
-        description = "Fired for an invalid operation."
+        description =
+            "Fired for an invalid operation."
     )
     public void ErrorOccurred(
         String message
     ) {
+
         EventDispatcher.dispatchEvent(
             this,
             "ErrorOccurred",
