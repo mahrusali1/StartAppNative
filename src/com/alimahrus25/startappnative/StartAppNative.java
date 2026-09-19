@@ -83,8 +83,22 @@ public class StartAppNative extends AndroidNonvisibleComponent {
         }
       }
       @Override public void onFailedToReceiveAd(Ad ad) {
-        AdFailedToLoad(ad == null || ad.getErrorMessage() == null ? "Unknown error" : ad.getErrorMessage());
-      }
+  String message = "Unknown error";
+
+  if (ad != null) {
+    String error = ad.getErrorMessage();
+
+    if (error != null && error.trim().length() > 0) {
+      message = error;
+    } else {
+      message = "SDK returned an error but no error message. Ad=" + ad.toString();
+    }
+  } else {
+    message = "SDK returned null Ad object";
+  }
+
+  AdFailedToLoad(message);
+}
     });
   }
 
