@@ -301,9 +301,53 @@ public class StartAppNative
                                 "callback received"
                             );
 
-                            BannerFailedToLoad(
-                                "Banner request failed"
-                            );
+                            try {
+
+                                String error =
+                                    banner != null
+                                        ? banner.getErrorMessage()
+                                        : null;
+
+                                if (
+                                    error != null &&
+                                    error.trim().length() > 0
+                                ) {
+
+                                    AdDebug(
+                                        "Banner SDK error = " +
+                                        error
+                                    );
+
+                                    BannerFailedToLoad(
+                                        "Banner request failed: " +
+                                        error
+                                    );
+
+                                } else {
+
+                                    AdDebug(
+                                        "Banner SDK error message is EMPTY"
+                                    );
+
+                                    BannerFailedToLoad(
+                                        "Banner request failed " +
+                                        "(SDK error message is empty)"
+                                    );
+                                }
+
+                            } catch (Exception e) {
+
+                                AdDebug(
+                                    "Banner getErrorMessage " +
+                                    "EXCEPTION = " +
+                                    errorMessage(e)
+                                );
+
+                                BannerFailedToLoad(
+                                    "Banner request failed: " +
+                                    errorMessage(e)
+                                );
+                            }
                         }
 
                         @Override
