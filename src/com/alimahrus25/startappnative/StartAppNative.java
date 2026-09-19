@@ -58,7 +58,6 @@ import java.util.ArrayList;
         "android.permission.ACCESS_WIFI_STATE, " +
         "android.permission.RECEIVE_BOOT_COMPLETED, " +
         "android.permission.BLUETOOTH, " +
-        "android.permission.AD_ID, " +
         "com.google.android.gms.permission.AD_ID, " +
         "com.google.android.finsky.permission.BIND_GET_INSTALL_REFERRER_SERVICE, " +
         "android.permission.ACCESS_ADSERVICES_TOPICS"
@@ -105,12 +104,6 @@ import java.util.ArrayList;
         }
     )
 })
-@UsesContentProviders(providers = {
-    @ProviderElement(
-        name = "com.startapp.sdk.adsbase.StartAppInitProvider",
-        authorities = "${applicationId}.startappinitprovider",
-        exported = "false"
-    )
 })
 public class StartAppNative
     extends AndroidNonvisibleComponent {
