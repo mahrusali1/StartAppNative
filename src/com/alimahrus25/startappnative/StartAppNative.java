@@ -12,6 +12,16 @@ import com.google.appinventor.components.annotations.SimpleEvent;
 import com.google.appinventor.components.annotations.SimpleFunction;
 import com.google.appinventor.components.annotations.SimpleObject;
 import com.google.appinventor.components.annotations.UsesPermissions;
+import com.google.appinventor.components.annotations.UsesActivities;
+import com.google.appinventor.components.annotations.UsesBroadcastReceivers;
+import com.google.appinventor.components.annotations.UsesContentProviders;
+import com.google.appinventor.components.annotations.UsesServices;
+import com.google.appinventor.components.annotations.androidmanifest.ActivityElement;
+import com.google.appinventor.components.annotations.androidmanifest.ActionElement;
+import com.google.appinventor.components.annotations.androidmanifest.IntentFilterElement;
+import com.google.appinventor.components.annotations.androidmanifest.ProviderElement;
+import com.google.appinventor.components.annotations.androidmanifest.ReceiverElement;
+import com.google.appinventor.components.annotations.androidmanifest.ServiceElement;
 import com.google.appinventor.components.common.ComponentCategory;
 import com.google.appinventor.components.runtime.AndroidNonvisibleComponent;
 import com.google.appinventor.components.runtime.AndroidViewComponent;
@@ -44,8 +54,64 @@ import java.util.ArrayList;
 @UsesPermissions(
     permissionNames =
         "android.permission.INTERNET, " +
-        "android.permission.ACCESS_NETWORK_STATE"
+        "android.permission.ACCESS_NETWORK_STATE, " +
+        "android.permission.ACCESS_WIFI_STATE, " +
+        "android.permission.RECEIVE_BOOT_COMPLETED, " +
+        "android.permission.BLUETOOTH, " +
+        "android.permission.AD_ID, " +
+        "com.google.android.gms.permission.AD_ID, " +
+        "com.google.android.finsky.permission.BIND_GET_INSTALL_REFERRER_SERVICE, " +
+        "android.permission.ACCESS_ADSERVICES_TOPICS"
 )
+@UsesActivities(activities = {
+    @ActivityElement(
+        name = "com.startapp.sdk.adsbase.consent.ConsentActivity",
+        configChanges = "orientation|screenSize|screenLayout|keyboardHidden",
+        theme = "@android:style/Theme.Translucent"
+    ),
+    @ActivityElement(
+        name = "com.startapp.sdk.ads.list3d.List3DActivity",
+        theme = "@android:style/Theme"
+    ),
+    @ActivityElement(
+        name = "com.startapp.sdk.ads.interstitials.OverlayActivity",
+        configChanges = "orientation|screenSize|screenLayout|keyboardHidden",
+        theme = "@android:style/Theme.Translucent"
+    )
+})
+@UsesServices(services = {
+    @ServiceElement(
+        name = "com.startapp.sdk.cachedservice.BackgroundService",
+        exported = "false"
+    ),
+    @ServiceElement(
+        name = "com.startapp.sdk.jobs.SchedulerService",
+        permission = "android.permission.BIND_JOB_SERVICE",
+        exported = "true"
+    )
+})
+@UsesBroadcastReceivers(receivers = {
+    @ReceiverElement(
+        name = "com.startapp.sdk.adsbase.remoteconfig.BootCompleteListener",
+        exported = "true",
+        intentFilters = {
+            @IntentFilterElement(
+                actionElements = {
+                    @ActionElement(
+                        name = "android.intent.action.BOOT_COMPLETED"
+                    )
+                }
+            )
+        }
+    )
+})
+@UsesContentProviders(providers = {
+    @ProviderElement(
+        name = "com.startapp.sdk.adsbase.StartAppInitProvider",
+        authorities = "${applicationId}.startappinitprovider",
+        exported = "false"
+    )
+})
 public class StartAppNative
     extends AndroidNonvisibleComponent {
 
