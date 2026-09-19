@@ -160,7 +160,7 @@ public class StartAppNative extends AndroidNonvisibleComponent {
                 "LoadNativeAd: creating StartAppNativeAd"
             );
 
-            nativeAd = new StartAppNativeAd(activity);
+            nativeAd = new StartAppNativeAd(activity.getApplicationContext());
 
             AdDebug(
                 "LoadNativeAd: StartAppNativeAd created"
