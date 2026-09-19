@@ -234,146 +234,24 @@ public class StartAppNative
 
             RemoveBannerFromScreen();
 
+            /*
+             * =====================================================
+             * 1. CREATE BANNER
+             * =====================================================
+             *
+             * Match the APK test flow:
+             *
+             *     new Banner(activity)
+             *
+             * The listener is attached separately below.
+             */
             AdDebug(
-                "LoadBanner: creating Banner"
+                "LoadBanner: creating Banner(activity)"
             );
 
             banner =
                 new Banner(
-                    activity,
-                    new BannerListener() {
-
-                        @Override
-                        public void onReceiveAd(
-                            View view
-                        ) {
-
-                            bannerLoaded = true;
-
-                            AdDebug(
-                                "Banner onReceiveAd: callback received"
-                            );
-
-                            try {
-
-                                AddBannerToScreen(
-                                    finalWidthDp,
-                                    finalHeightDp
-                                );
-
-                                if (banner != null) {
-
-                                    banner.showBanner();
-
-                                }
-
-                                AdDebug(
-                                    "Banner onReceiveAd: " +
-                                    "banner added and shown"
-                                );
-
-                                BannerLoaded();
-
-                            } catch (Exception e) {
-
-                                AdDebug(
-                                    "Banner onReceiveAd: " +
-                                    "EXCEPTION = " +
-                                    errorMessage(e)
-                                );
-
-                                BannerFailedToLoad(
-                                    "Banner display exception: " +
-                                    errorMessage(e)
-                                );
-                            }
-                        }
-
-                        @Override
-                        public void onFailedToReceiveAd(
-                            View view
-                        ) {
-
-                            bannerLoaded = false;
-
-                            AdDebug(
-                                "Banner onFailedToReceiveAd: " +
-                                "callback received"
-                            );
-
-                            try {
-
-                                String error =
-                                    banner != null
-                                        ? banner.getErrorMessage()
-                                        : null;
-
-                                if (
-                                    error != null &&
-                                    error.trim().length() > 0
-                                ) {
-
-                                    AdDebug(
-                                        "Banner SDK error = " +
-                                        error
-                                    );
-
-                                    BannerFailedToLoad(
-                                        "Banner request failed: " +
-                                        error
-                                    );
-
-                                } else {
-
-                                    AdDebug(
-                                        "Banner SDK error message is EMPTY"
-                                    );
-
-                                    BannerFailedToLoad(
-                                        "Banner request failed " +
-                                        "(SDK error message is empty)"
-                                    );
-                                }
-
-                            } catch (Exception e) {
-
-                                AdDebug(
-                                    "Banner getErrorMessage " +
-                                    "EXCEPTION = " +
-                                    errorMessage(e)
-                                );
-
-                                BannerFailedToLoad(
-                                    "Banner request failed: " +
-                                    errorMessage(e)
-                                );
-                            }
-                        }
-
-                        @Override
-                        public void onImpression(
-                            View view
-                        ) {
-
-                            AdDebug(
-                                "Banner onImpression"
-                            );
-
-                            BannerImpression();
-                        }
-
-                        @Override
-                        public void onClick(
-                            View view
-                        ) {
-
-                            AdDebug(
-                                "Banner onClick"
-                            );
-
-                            BannerClicked();
-                        }
-                    }
+                    activity
                 );
 
             AdDebug(
@@ -381,11 +259,168 @@ public class StartAppNative
             );
 
             /*
-             * Hide it until the SDK reports
-             * that the banner has been received.
+             * =====================================================
+             * 2. SET BANNER LISTENER
+             * =====================================================
+             */
+            banner.setBannerListener(
+                new BannerListener() {
+
+                    @Override
+                    public void onReceiveAd(
+                        View view
+                    ) {
+
+                        bannerLoaded = true;
+
+                        AdDebug(
+                            "Banner onReceiveAd: callback received"
+                        );
+
+                        try {
+
+                            if (banner != null) {
+
+                                banner.setVisibility(
+                                    View.VISIBLE
+                                );
+
+                                banner.showBanner();
+
+                            }
+
+                            AdDebug(
+                                "Banner onReceiveAd: " +
+                                "banner shown"
+                            );
+
+                            BannerLoaded();
+
+                        } catch (Exception e) {
+
+                            AdDebug(
+                                "Banner onReceiveAd: " +
+                                "EXCEPTION = " +
+                                errorMessage(e)
+                            );
+
+                            BannerFailedToLoad(
+                                "Banner display exception: " +
+                                errorMessage(e)
+                            );
+                        }
+                    }
+
+                    @Override
+                    public void onFailedToReceiveAd(
+                        View view
+                    ) {
+
+                        bannerLoaded = false;
+
+                        AdDebug(
+                            "Banner onFailedToReceiveAd: " +
+                            "callback received"
+                        );
+
+                        try {
+
+                            String error =
+                                banner != null
+                                    ? banner.getErrorMessage()
+                                    : null;
+
+                            if (
+                                error != null &&
+                                error.trim().length() > 0
+                            ) {
+
+                                AdDebug(
+                                    "Banner SDK error = " +
+                                    error
+                                );
+
+                                BannerFailedToLoad(
+                                    "Banner request failed: " +
+                                    error
+                                );
+
+                            } else {
+
+                                AdDebug(
+                                    "Banner SDK error message is EMPTY"
+                                );
+
+                                BannerFailedToLoad(
+                                    "Banner request failed " +
+                                    "(SDK error message is empty)"
+                                );
+                            }
+
+                        } catch (Exception e) {
+
+                            AdDebug(
+                                "Banner getErrorMessage " +
+                                "EXCEPTION = " +
+                                errorMessage(e)
+                            );
+
+                            BannerFailedToLoad(
+                                "Banner request failed: " +
+                                errorMessage(e)
+                            );
+                        }
+                    }
+
+                    @Override
+                    public void onImpression(
+                        View view
+                    ) {
+
+                        AdDebug(
+                            "Banner onImpression"
+                        );
+
+                        BannerImpression();
+                    }
+
+                    @Override
+                    public void onClick(
+                        View view
+                    ) {
+
+                        AdDebug(
+                            "Banner onClick"
+                        );
+
+                        BannerClicked();
+                    }
+                }
+            );
+
+            AdDebug(
+                "LoadBanner: BannerListener set"
+            );
+
+            /*
+             * =====================================================
+             * 3. HIDE BANNER BEFORE LOAD
+             * =====================================================
              */
             banner.setVisibility(
                 View.GONE
+            );
+
+            /*
+             * =====================================================
+             * 4. ADD BANNER TO SCREEN
+             * =====================================================
+             *
+             * The View is attached before loadAd(), matching
+             * the APK test flow.
+             */
+            AdDebug(
+                "LoadBanner: adding Banner to screen"
             );
 
             AddBannerToScreen(
@@ -394,23 +429,23 @@ public class StartAppNative
             );
 
             AdDebug(
-                "LoadBanner: calling " +
-                "banner.loadAd(" +
-                String.valueOf(finalWidthDp) +
-                "," +
-                String.valueOf(finalHeightDp) +
-                ")"
+                "LoadBanner: Banner added to screen"
             );
 
             /*
-             * This is the Start.io Banner API:
+             * =====================================================
+             * 5. LOAD AD
+             * =====================================================
              *
-             * banner.loadAd(widthDP, heightDP);
+             * The APK test flow uses loadAd() without dimensions.
+             * The View dimensions are already supplied by
+             * AddBannerToScreen().
              */
-            banner.loadAd(
-                finalWidthDp,
-                finalHeightDp
+            AdDebug(
+                "LoadBanner: calling banner.loadAd()"
             );
+
+            banner.loadAd();
 
             AdDebug(
                 "LoadBanner: banner.loadAd() returned"
